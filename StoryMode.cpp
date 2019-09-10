@@ -54,12 +54,18 @@ Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
 
   };
 
+  auto line_is_blank = [](std::string const &l) {
+    if (l.empty()) return true;
+    if (l.size() == 1 && l[0] == '\r') return true;
+    return false;
+  };
+
   while (std::getline(scene_data, line)) {
 
     std::cout << line << std::endl;
     switch (fsm) {
       case CONDITIONS: {
-        if (line.empty()) {
+        if (line_is_blank(line)) {
           fsm = SCENE_TITLE;
           break;
         }
@@ -79,7 +85,7 @@ Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
         break;
       }
       case SCENE_SPRITES: {
-        if (line.empty()) {
+        if (line_is_blank(line)) {
           fsm = SCENE_TEXT;
           break;
         }
@@ -97,7 +103,7 @@ Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
         break;
       }
       case SCENE_TEXT: {
-        if (line.empty()) {
+        if (line_is_blank(line)) {
           fsm = SCENE_CHOICES;
           break;
         }
@@ -116,7 +122,7 @@ Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
       }
 
       case SCENE_CHOICES: {
-        if (line.empty()) {
+        if (line_is_blank(line)) {
           fsm = SCENE_TITLE;
           break;
         }
