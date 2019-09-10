@@ -15,7 +15,7 @@ std::string init_location = "";
 Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
   SpriteAtlas const *ret = new SpriteAtlas(data_path("escape-room"));
   std::ifstream scene_data;
-  scene_data.open(data-path("escape-room.story"));
+  scene_data.open(data_path("escape-room.story"));
   std::string line;
   assert(scene_data.is_open() && "Story file not found");
 

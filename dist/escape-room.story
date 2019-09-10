@@ -44,12 +44,14 @@ Light,Drawer,!Key|room-key
 |You are in the room. The game-master
 |has locked the door.
 !Searched|There is a table.
-Searched|There is a table, drawer, and
-Searched|a switch on the wall.
-!Light,Drawer|The drawer is open.
+Searched|There is a table, drawer, and a switch
+Searched|on the wall.
+!Light,Drawer|The drawer is open, but it's hard to see
+!Light,Drawer|inside it.
 Light,!Drawer|The lights are on.
-Drawer,Light|Light floods the drawer. A twinkle
-Drawer,Light|in the drawer catches your eye. A key!
+Drawer,Light,!Key|Light floods the drawer. A twinkle in the
+Drawer,Light,!Key|drawer catches your eye. A key!
+Drawer,Light,Key|The drawer is very empty.
 
 !Searched|Searched|Room|Examine the room.
 Searched,!Drawer|Drawer|Room|Open the drawer.
