@@ -2,8 +2,8 @@
 
 #This exists mainly to work around the (many) problems with doing (simple) CLI things on windows. Like lack of shell globbing.
 
-name = "the-planet"
-gimp = "C:\\Program Files\\GIMP 2\\bin\\gimp-console-2.10.exe"
+name = "escape-room"
+gimp = "Z:\\Program Files\\GIMP 2\\bin\\gimp-console-2.10.exe"
 
 import subprocess
 import os

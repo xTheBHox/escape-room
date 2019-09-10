@@ -1,0 +1,9 @@
+escape-room.xcf?lobby-bg 0 0 256 224 0 0 lobby-bg
+escape-room.xcf?lobby-gm-counter 31 107 +37 +45 0 0 lobby-gm-counter
+escape-room.xcf?lobby-gm-door 152 112 +28 +48 0 0 lobby-gm-door
+escape-room.xcf?lobby-door-closed 209 124 +3 +11 0 0 lobby-door-closed
+escape-room.xcf?lobby-door-open 171 92 +46 +76 0 0 lobby-door-open
+escape-room.xcf?room-bg 0 0 256 224 0 0 room-bg
+escape-room.xcf?room-drawer 123 147 +26 +14 0 0 room-drawer
+escape-room.xcf?room-light 88 23 +72 +3 0 0 room-light
+escape-room.xcf?room-key 139 153 +4 +2 0 0 room-key

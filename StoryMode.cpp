@@ -10,12 +10,12 @@
 
 std::unordered_map< std::string, StoryMode::Scene > scenes;
 std::unordered_map< std::string, uint32_t > resources;
-//std::vector< std::vector< std::pair< std::string, bool >>> preds;
+std::vector< std::vector< std::pair< uint32_t &, bool >>> preds;
 std::string init_location = "";
 Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
-  SpriteAtlas const *ret = new SpriteAtlas(data_path("the-planet"));
+  SpriteAtlas const *ret = new SpriteAtlas(data_path("escape-room"));
   std::ifstream scene_data;
-  scene_data.open("../resources/desert-planet.txt");
+  scene_data.open("../resources/escape-room.txt");
   std::string line;
   assert(scene_data.is_open() && "Story file not found");
 
@@ -28,30 +28,33 @@ Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
   } fsm = CONDITIONS;
   StoryMode::Scene *curr_scene;
 
+  auto parse_pred = [](std::string &csl) -> std::function< bool () > {
+    std::istringstream iss(csl);
+    std::string tmp;
+    preds.emplace_back();
+    auto &conditions = preds.back();
+    while (std::getline(iss, tmp, ',')) {
+      if (tmp[0] == '!') {
+        tmp.erase(0, 1);
+        conditions.emplace_back(resources.at(tmp), false);
+      }
+      else {
+        conditions.emplace_back(resources.at(tmp), true);
+      }
+    }
+    auto const &conditions_ref = preds.back();
+    auto pred_fn = [conditions_ref]() -> bool {
+      for (auto &p : conditions_ref) {
+        if (p.second && p.first == 0) return false;
+        if (!p.second && p.first > 0) return false;
+      }
+      return true;
+    };
+    return pred_fn;
+
+  };
+
   while (std::getline(scene_data, line)) {
-
-/*    auto parse_pred = [&resources](std::string &csl) {
-      std::istringstream iss(csl);
-      std::string tmp;
-      std::vector<std::string> tokens;
-      while(std::getline(csl, tmp, ',') {
-        tokens.emplace_back(tmp);
-      }
-      for (std::string &tok : tokens) {
-        if (tok[0] == '!') {
-          negate = true;
-          tok.erase(0, 1);
-        }
-        else {
-          negate = false;
-        }
-        uint32_t &res_count_ref = resources.at(tok);
-        auto &res_count_ref = resources.at(tok);
-        if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
-        else pred = [&res_count_ref]() { return res_count_ref == 0; };
-      }
-
-    };*/
 
     std::cout << line << std::endl;
     switch (fsm) {
@@ -82,24 +85,13 @@ Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
         }
         std::istringstream iss(line);
         std::string tok;
-        bool negate;
+        //bool negate;
         std::function< bool() > pred;
         std::getline(iss, tok, '|');
         if (tok.empty()) {
           pred = [](){ return true; };
         }
-        else {
-          if (tok[0] == '!') {
-            negate = true;
-            tok.erase(0, 1);
-          }
-          else {
-            negate = false;
-          }
-          auto &res_count_ref = resources.at(tok);
-          if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
-          else pred = [&res_count_ref]() { return res_count_ref == 0; };
-        }
+        else pred = parse_pred(tok);
         std::getline(iss, tok);
         curr_scene->sprites.emplace_back(&ret->lookup(tok), pred);
         break;
@@ -111,24 +103,13 @@ Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
         }
         std::istringstream iss(line);
         std::string tok;
-        bool negate;
+        //bool negate;
         std::function< bool() > pred;
         std::getline(iss, tok, '|');
         if (tok.empty()) {
           pred = [](){ return true; };
         }
-        else {
-          if (tok[0] == '!') {
-            negate = true;
-            tok.erase(0, 1);
-          }
-          else {
-            negate = false;
-          }
-          auto &res_count_ref = resources.at(tok);
-          if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
-          else pred = [&res_count_ref]() { return res_count_ref == 0; };
-        }
+        else pred = parse_pred(tok);
         std::getline(iss, tok);
         curr_scene->texts.emplace_back(tok, pred);
         break;
@@ -148,19 +129,7 @@ Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
         if (tok.empty()) {
           pred = [](){ return true; };
         }
-        else {
-          if (tok[0] == '!') {
-            negate = true;
-            tok.erase(0, 1);
-          }
-          else {
-            negate = false;
-          }
-          auto &res_count_ref = resources.at(tok);
-          if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
-          else pred = [&res_count_ref]() { return res_count_ref == 0; };
-        }
-
+        else pred = parse_pred(tok);
         std::getline(iss, tok, '|'); // This is the condition fulfilled
         if (tok.empty()) {
           res = [](){};
@@ -214,14 +183,10 @@ void StoryMode::update(float elapsed) {
 void StoryMode::enter_scene() {
 	//just entered this scene, adjust flags and build menu as appropriate:
 	std::vector< MenuMode::Item > items;
-	glm::vec2 at(3.0f, view_max.y - 3.0f);
+	glm::vec2 at(3.0f, view_max.y - 20.0f);
 	auto add_text = [&items, &at](Scene::SceneText const &st) {
 		items.emplace_back(st.st, nullptr, 1.0f, nullptr, at);
-    // TODO
-    //.get_text_extents(
-    //  item.name, at, item.scale, &min, &max
-    //);
-    at.y -= 20.0f;
+    at.y -= 14.0f;
 		at.y -= 4.0f;
 	};
 	auto add_choice = [this, &items, &at](Scene::SceneChoice const &st) {
@@ -231,9 +196,7 @@ void StoryMode::enter_scene() {
 			Mode::current = shared_from_this();
     };
 		items.emplace_back(st.st, nullptr, 1.0f, modres, at);
-    // TODO
-		//at.y -= text->max_px.y - text->min_px.y;
-    at.y -= 20.0f;
+    at.y -= 14.0f;
 		at.y -= 4.0f;
 	};
 
@@ -241,16 +204,15 @@ void StoryMode::enter_scene() {
     if (!st.pred()) continue;
     add_text(st);
   }
-  at.y -= 8.0f;
+  at.y -= 4.0f;
   for (Scene::SceneChoice const &st : location->choices) {
     if (!st.pred()) continue;
     add_choice(st);
   }
 
 	std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >(items);
-	//menu->atlas = sprites;
-	menu->left_select = &sprites->lookup("text-select-left");
-	menu->right_select = &sprites->lookup("text-select-right");
+	// menu->left_select = &sprites->lookup("text-select-left");
+	// menu->right_select = &sprites->lookup("text-select-right");
 	menu->view_min = view_min;
 	menu->view_max = view_max;
 	menu->background = shared_from_this();
