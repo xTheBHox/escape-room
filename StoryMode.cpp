@@ -7,85 +7,161 @@
 #include "gl_errors.hpp"
 #include "MenuMode.hpp"
 
-Sprite const *sprite_left_select = nullptr;
-Sprite const *sprite_right_select = nullptr;
-
-Sprite const *sprite_dunes_bg = nullptr;
-Sprite const *sprite_dunes_traveller = nullptr;
-Sprite const *sprite_dunes_ship = nullptr;
-
-Sprite const *sprite_oasis_bg = nullptr;
-Sprite const *sprite_oasis_traveller = nullptr;
-Sprite const *sprite_oasis_missing = nullptr;
-
-Sprite const *sprite_hill_bg = nullptr;
-Sprite const *sprite_hill_traveller = nullptr;
-Sprite const *sprite_hill_missing = nullptr;
-
-Sprite const *text_dunes_landing = nullptr;
-Sprite const *text_dunes_return = nullptr;
-Sprite const *text_dunes_wont_leave = nullptr;
-Sprite const *text_dunes_do_leave = nullptr;
-Sprite const *text_dunes_do_walk_east = nullptr;
-Sprite const *text_dunes_do_walk_west = nullptr;
-
-Sprite const *text_oasis_intro = nullptr;
-Sprite const *text_oasis_stone = nullptr;
-Sprite const *text_oasis_plain = nullptr;
-Sprite const *text_oasis_stone_taken = nullptr;
-Sprite const *text_oasis_do_take_stone = nullptr;
-Sprite const *text_oasis_do_return = nullptr;
-
-Sprite const *text_hill_intro = nullptr;
-Sprite const *text_hill_inactive = nullptr;
-Sprite const *text_hill_active = nullptr;
-Sprite const *text_hill_stone_added = nullptr;
-Sprite const *text_hill_do_add_stone = nullptr;
-Sprite const *text_hill_do_return = nullptr;
+std::unordered_map< std::string, StoryMode::Scene > scenes;
+std::unordered_map< std::string, uint32_t > resources;
 
 Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
-	SpriteAtlas const *ret = new SpriteAtlas(data_path("the-planet"));
 
-	sprite_left_select = &ret->lookup("text-select-left");
-	sprite_right_select = &ret->lookup("text-select-right");
+  SpriteAtlas const *ret = new SpriteAtlas(data_path("the-planet"));
+  std::ifstream scene_data;
+  scene_data.open("resources/scene-data.txt");
+  std::string line;
+  if (scene_data.is_open()) {
 
-	sprite_dunes_bg = &ret->lookup("dunes-bg");
-	sprite_dunes_traveller = &ret->lookup("dunes-traveller");
-	sprite_dunes_ship = &ret->lookup("dunes-ship");
+    enum {
+      CONDITIONS,
+      SCENE_TITLE,
+      SCENE_SPRITES,
+      SCENE_TEXT,
+      SCENE_CHOICES
+    } fsm = CONDITIONS;
+    StoryMode::Scene *curr_scene;
 
-	sprite_oasis_bg = &ret->lookup("oasis-bg");
-	sprite_oasis_traveller = &ret->lookup("oasis-traveller");
-	sprite_oasis_missing = &ret->lookup("oasis-missing");
+    while (std::getline(scene_data, line)) {
+      switch (fsm) {
+        case CONDITIONS: {
+          if (line.empty()) {
+            fsm = SCENE_TITLE;
+            break;
+          }
+          resources.emplace(line, 0);
+          break;
+        }
+        case SCENE_TITLE: {
+          auto current_scene_pair = scenes.emplace(line, StoryMode::Scene());
+          assert(current_scene_pair.second && "Duplicate scene titles");
+          curr_scene = &current_scene_pair.first->second;
+          fsm = SCENE_SPRITES;
+          break;
+        }
+        case SCENE_SPRITES: {
+          if (line.empty()) {
+            fsm = SCENE_TEXT;
+            break;
+          }
+          std::istringstream iss(line);
+          std::string tok;
+          bool negate;
+          std::function< bool() > pred;
+          std::getline(iss, tok, '|');
+          if (tok.empty()) {
+            pred = [](){ return true; };
+          }
+          else {
+            if (tok[0] == '!') {
+              negate = true;
+              tok.erase(0, 1);
+            }
+            else {
+              negate = false;
+            }
+            auto &res_count_ref = resources.at(tok);
+            pred = [&res_count_ref]() { return res_count_ref; };
+          }
+          std::getline(iss, tok);
+          curr_scene->sprites.emplace_back(&ret->lookup(tok), pred);
+          break;
+        }
+        case SCENE_TEXT: {
+          if (line.empty()) {
+            fsm = SCENE_CHOICES;
+            break;
+          }
+          std::istringstream iss(line);
+          std::string tok;
+          bool negate;
+          std::function< bool() > pred;
+          std::getline(iss, tok, '|');
+          if (tok.empty()) {
+            pred = [](){ return true; };
+          }
+          else {
+            if (tok[0] == '!') {
+              negate = true;
+              tok.erase(0, 1);
+            }
+            else {
+              negate = false;
+            }
+            auto &res_count_ref = resources.at(tok);
+            if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
+            else pred = [&res_count_ref]() { return res_count_ref == 0; };
+          }
+          std::getline(iss, tok);
+          curr_scene->texts.emplace_back(tok, pred);
+          break;
+        }
 
-	sprite_hill_bg = &ret->lookup("hill-bg");
-	sprite_hill_traveller = &ret->lookup("hill-traveller");
-	sprite_hill_missing = &ret->lookup("hill-missing");
+        case SCENE_CHOICES: {
+          if (line.empty()) {
+            fsm = SCENE_TITLE;
+            break;
+          }
+          std::istringstream iss(line);
+          std::string tok, tok1;
+          bool negate;
+          std::function< bool() > pred;
+          std::function< void() > res;
+          std::getline(iss, tok, '|');
+          if (tok.empty()) {
+            pred = [](){ return true; };
+          }
+          else {
+            if (tok[0] == '!') {
+              negate = true;
+              tok.erase(0, 1);
+            }
+            else {
+              negate = false;
+            }
+            auto &res_count_ref = resources.at(tok);
+            if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
+            else pred = [&res_count_ref]() { return res_count_ref == 0; };
+          }
 
-	text_dunes_landing = &ret->lookup("dunes-text-landing");
-	text_dunes_return = &ret->lookup("dunes-text-return");
-	text_dunes_wont_leave = &ret->lookup("dunes-text-won't-leave");
-	text_dunes_do_leave = &ret->lookup("dunes-text-do-leave");
-	text_dunes_do_walk_east = &ret->lookup("dunes-text-do-walk-east");
-	text_dunes_do_walk_west = &ret->lookup("dunes-text-do-walk-west");
+          std::getline(iss, tok, '|'); // This is the condition fulfilled
+          if (tok.empty()) {
+            res = [](){};
+          }
+          else {
+            if (tok[0] == '!') {
+              negate = true;
+              tok.erase(0, 1);
+            }
+            else {
+              negate = false;
+            }
+            auto &res_count_ref = resources.at(tok);
+            if (!negate) res = [&res_count_ref]() { return res_count_ref++; };
+            else res = [&res_count_ref]() { return res_count_ref--; };
+          }
+          std::getline(iss, tok, '|');
+          std::getline(iss, tok1);
+          curr_scene->choices.emplace_back(tok1, tok, pred, res);
+          break;
+        }
 
-	text_oasis_intro = &ret->lookup("oasis-text-intro");
-	text_oasis_stone = &ret->lookup("oasis-text-stone");
-	text_oasis_plain = &ret->lookup("oasis-text-plain");
-	text_oasis_stone_taken = &ret->lookup("oasis-text-stone-taken");
-	text_oasis_do_take_stone = &ret->lookup("oasis-text-do-take-stone");
-	text_oasis_do_return = &ret->lookup("oasis-text-do-return");
+      }
 
-	text_hill_intro = &ret->lookup("hill-text-intro");
-	text_hill_inactive = &ret->lookup("hill-text-inactive");
-	text_hill_active = &ret->lookup("hill-text-active");
-	text_hill_stone_added = &ret->lookup("hill-text-stone-added");
-	text_hill_do_add_stone = &ret->lookup("hill-text-do-add-stone");
-	text_hill_do_return = &ret->lookup("hill-text-do-return");
+    }
+  }
 
 	return ret;
+
 });
 
 StoryMode::StoryMode() {
+  location = &scenes.at("Dunes");
 }
 
 StoryMode::~StoryMode() {
@@ -108,108 +184,42 @@ void StoryMode::enter_scene() {
 	//just entered this scene, adjust flags and build menu as appropriate:
 	std::vector< MenuMode::Item > items;
 	glm::vec2 at(3.0f, view_max.y - 3.0f);
-	auto add_text = [&items,&at](Sprite const *text) {
-		assert(text);
-		items.emplace_back("TEST TEXT", nullptr, 1.0f, nullptr, at);
-		at.y -= text->max_px.y - text->min_px.y;
+	auto add_text = [&items, &at](Scene::SceneText const &st) {
+		items.emplace_back(st.st, nullptr, 1.0f, nullptr, at);
+    // TODO
+    //.get_text_extents(
+    //  item.name, at, item.scale, &min, &max
+    //);
+    at.y -= 20.0f;
 		at.y -= 4.0f;
 	};
-	auto add_choice = [&items,&at](Sprite const *text, std::function< void(MenuMode::Item const &) > const &fn) {
-		assert(text);
-		items.emplace_back("TEST CHOICE", nullptr, 1.0f, fn, at + glm::vec2(8.0f, 0.0f));
-		at.y -= text->max_px.y - text->min_px.y;
+	auto add_choice = [this, &items, &at](Scene::SceneChoice const &st) {
+    std::function< void() > modres = [&st, this]() {
+      st.res();
+      this->location = &scenes.at(st.next_scene);
+			Mode::current = shared_from_this();
+    };
+		items.emplace_back(st.st, nullptr, 1.0f, modres, at);
+    // TODO
+		//at.y -= text->max_px.y - text->min_px.y;
+    at.y -= 20.0f;
 		at.y -= 4.0f;
 	};
 
-	if (location == Dunes) {
-		if (dunes.wont_leave) {
-			dunes.wont_leave = false;
-			add_text(text_dunes_wont_leave);
-		}
-		if (dunes.first_visit) {
-			dunes.first_visit = false;
-			add_text(text_dunes_landing);
-		} else {
-			add_text(text_dunes_return);
-		}
-		at.y -= 8.0f; //gap before choices
-		add_choice(text_dunes_do_walk_west, [this](MenuMode::Item const &){
-			location = Hill;
-			Mode::current = shared_from_this();
-		});
-		add_choice(text_dunes_do_walk_east, [this](MenuMode::Item const &){
-			location = Oasis;
-			Mode::current = shared_from_this();
-		});
-		if (!dunes.first_visit) {
-			add_choice(text_dunes_do_leave, [this](MenuMode::Item const &){
-				if (added_stone) {
-					//TODO: some sort of victory animation?
-					Mode::current = nullptr;
-				} else {
-					dunes.wont_leave = true;
-					Mode::current = shared_from_this();
-				}
-			});
-		}
-	} else if (location == Oasis) {
-		if (oasis.took_stone) {
-			oasis.took_stone = false;
-			add_text(text_oasis_stone_taken);
-		}
-		if (oasis.first_visit) {
-			oasis.first_visit = false;
-			add_text(text_oasis_intro);
-		} else {
-			add_text(text_oasis_plain);
-		}
-		if (!have_stone) {
-			add_text(text_oasis_stone);
-		}
-		at.y -= 8.0f; //gap before choices
-		if (!have_stone) {
-			add_choice(text_oasis_do_take_stone, [this](MenuMode::Item const &){
-				have_stone = true;
-				oasis.took_stone = true;
-				Mode::current = shared_from_this();
-			});
-		}
-		add_choice(text_oasis_do_return, [this](MenuMode::Item const &){
-			location = Dunes;
-			Mode::current = shared_from_this();
-		});
-	} else if (location == Hill) {
-		if (hill.added_stone) {
-			hill.added_stone = false;
-			add_text(text_hill_stone_added);
-		}
-		if (hill.first_visit) {
-			hill.first_visit = false;
-			add_text(text_hill_intro);
-		} else {
-			if (added_stone) {
-				add_text(text_hill_active);
-			} else {
-				add_text(text_hill_inactive);
-			}
-		}
-		at.y -= 8.0f; //gap before choices
-		if (have_stone && !added_stone) {
-			add_choice(text_hill_do_add_stone, [this](MenuMode::Item const &){
-				added_stone = true;
-				hill.added_stone = true;
-				Mode::current = shared_from_this();
-			});
-		}
-		add_choice(text_hill_do_return, [this](MenuMode::Item const &){
-			location = Dunes;
-			Mode::current = shared_from_this();
-		});
-	}
+  for (Scene::SceneText const &st : location->texts) {
+    if (!st.pred()) continue;
+    add_text(st);
+  }
+  at.y -= 8.0f;
+  for (Scene::SceneChoice const &st : location->choices) {
+    if (!st.pred()) continue;
+    add_choice(st);
+  }
+
 	std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >(items);
 	menu->atlas = sprites;
-	menu->left_select = sprite_left_select;
-	menu->right_select = sprite_right_select;
+	menu->left_select = &sprites->lookup("text-select-left");
+	menu->right_select = &sprites->lookup("text-select-right");
 	menu->view_min = view_min;
 	menu->view_max = view_max;
 	menu->background = shared_from_this();
@@ -230,24 +240,11 @@ void StoryMode::draw(glm::uvec2 const &drawable_size) {
 	{ //use a DrawSprites to do the drawing:
 		DrawSprites draw(*sprites, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
 		glm::vec2 ul = glm::vec2(view_min.x, view_max.y);
-		if (location == Dunes) {
-			draw.draw(*sprite_dunes_bg, ul);
-			draw.draw(*sprite_dunes_ship, ul);
-			draw.draw(*sprite_dunes_traveller, ul);
-		} else if (location == Oasis) {
-			draw.draw(*sprite_oasis_bg, ul);
-			if (!have_stone) {
-				draw.draw(*sprite_oasis_missing, ul);
-			}
-			draw.draw(*sprite_oasis_traveller, ul);
-
-		} else if (location == Hill) {
-			draw.draw(*sprite_hill_bg, ul);
-			if (added_stone) {
-				draw.draw(*sprite_hill_missing, ul);
-			}
-			draw.draw(*sprite_hill_traveller, ul);
-		}
+    for (Scene::SceneSprite const &sp : location->sprites) {
+      if (sp.pred()) {
+        draw.draw(*(sp.sp), ul);
+      }
+    }
 	}
 	GL_ERRORS(); //did the DrawSprites do something wrong?
 }

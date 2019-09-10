@@ -14,6 +14,7 @@
 #include <glm/glm.hpp>
 
 #include <vector>
+#include <algorithm>
 
 struct DrawSprites {
 	enum AlignMode {

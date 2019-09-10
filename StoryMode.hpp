@@ -5,6 +5,15 @@
  */
 
 #include "Mode.hpp"
+#include "Sprite.hpp"
+
+#include <string>
+#include <vector>
+#include <unordered_map>
+
+#include <fstream>
+#include <sstream>
+#include <functional>
 
 struct StoryMode : Mode {
 	StoryMode();
@@ -17,12 +26,35 @@ struct StoryMode : Mode {
 	//called to create menu for current scene:
 	void enter_scene();
 
+
+  struct Scene {
+    struct SceneChoice {
+      SceneChoice(std::string const &st, std::string const &next, std::function< bool() > const &pred_, std::function< void() > const &res_) :
+        st(st), next_scene(next), pred(pred_), res(res_) { }
+      std::string st;
+      std::string next_scene;
+      std::function< bool() > pred;
+      std::function< void() > res;
+    };
+    std::vector< SceneChoice > choices;
+    struct SceneText {
+      SceneText(std::string const &st, std::function< bool() > const &pred_) :
+        st(st), pred(pred_) { }
+      std::string st;
+      std::function< bool() > pred;
+    };
+    std::vector< SceneText > texts;
+    struct SceneSprite {
+      SceneSprite(Sprite const *sp_, std::function< bool() > const &pred_) :
+        sp(sp_), pred(pred_) { }
+      Sprite const *sp;
+      std::function< bool() > pred;
+    };
+    std::vector< SceneSprite > sprites;
+  };
+
 	//------ story state -------
-	enum {
-		Dunes,
-		Oasis,
-		Hill
-	} location = Dunes;
+  Scene const *location;
 	bool have_stone = false;
 	bool added_stone = false;
 	struct {
@@ -37,7 +69,7 @@ struct StoryMode : Mode {
 		bool first_visit = true;
 		bool added_stone = false;
 	} hill;
-	
+
 	glm::vec2 view_min = glm::vec2(0,0);
 	glm::vec2 view_max = glm::vec2(256, 224);
 };

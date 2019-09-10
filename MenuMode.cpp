@@ -5,10 +5,21 @@
 
 //for easy sprite drawing:
 #include "DrawSprites.hpp"
+#include "Load.hpp"
+#include "data_path.hpp"
 
 #include <random>
 
+Load< SpriteAtlas > menu_font(LoadTagDefault, []() -> SpriteAtlas const * {
+
+  SpriteAtlas const *ret = new SpriteAtlas(data_path("trade-font"));
+  return ret;
+
+});
+
 MenuMode::MenuMode(std::vector< Item > const &items_) : items(items_) {
+
+  atlas = menu_font;
 
 	//select first item which can be selected:
 	for (uint32_t i = 0; i < items.size(); ++i) {
@@ -44,7 +55,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			return true;
 		} else if (evt.key.keysym.sym == SDLK_RETURN) {
 			if (selected < items.size() && items[selected].on_select) {
-				items[selected].on_select(items[selected]);
+				items[selected].on_select();
 				return true;
 			}
 		}
@@ -114,7 +125,7 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 					draw_sprites.draw(*right_select, glm::vec2(right, item.at.y), item.scale);
 				}
 			}
-			
+
 		}
 	} //<-- gets drawn here!
 

@@ -151,6 +151,15 @@ void DrawSprites::draw_text(std::string const &name, glm::vec2 const &anchor, fl
 }
 
 void DrawSprites::get_text_extents(std::string const &name, glm::vec2 const &anchor, float scale, glm::vec2 *min, glm::vec2 *max) {
+  *min = anchor;
+  *max = anchor;
+	for (size_t pos = 0; pos < name.size(); pos++){
+		Sprite const &chr = atlas.lookup(name.substr(pos,1));
+    min->x -= (chr.anchor_px.x - chr.min_px.x) * scale;
+		max->x += (chr.max_px.x - chr.anchor_px.x) * scale;
+    min->y = std::min(min->y, chr.anchor_px.y - chr.min_px.y);
+    max->y = std::max(chr.max_px.y - chr.anchor_px.y, max->y);
+	}
 }
 
 DrawSprites::~DrawSprites() {
@@ -188,4 +197,3 @@ DrawSprites::~DrawSprites() {
 	//reset current program to none:
 	glUseProgram(0);
 }
-

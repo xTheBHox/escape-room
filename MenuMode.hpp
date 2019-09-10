@@ -27,14 +27,14 @@ struct MenuMode : Mode {
 			std::string const &name_,
 			Sprite const *sprite_ = nullptr,
 			float scale_ = 1.0f,
-			std::function< void(Item const &) > const &on_select_ = nullptr,
+			std::function< void() > const &on_select_ = nullptr,
 			glm::vec2 const &at_ = glm::vec2(0.0f)
 			) : name(name_), sprite(sprite_), scale(scale_), on_select(on_select_), at(at_) {
 		}
 		std::string name;
 		Sprite const *sprite; //sprite drawn for item
 		float scale; //scale for sprite
-		std::function< void(Item const &) > on_select; //if set, item is selectable
+		std::function< void() > on_select; //if set, item is selectable
 		glm::vec2 at; //location to draw item
 	};
 	std::vector< Item > items;
