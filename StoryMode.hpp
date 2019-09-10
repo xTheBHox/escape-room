@@ -54,7 +54,7 @@ struct StoryMode : Mode {
   };
 
 	//------ story state -------
-  Scene const *location;
+  std::string location;
 	bool have_stone = false;
 	bool added_stone = false;
 	struct {

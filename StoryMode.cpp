@@ -161,7 +161,7 @@ Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
 });
 
 StoryMode::StoryMode() {
-  location = &scenes.at(init_location);
+  location = init_location;
 }
 
 StoryMode::~StoryMode() {
@@ -192,7 +192,7 @@ void StoryMode::enter_scene() {
 	auto add_choice = [this, &items, &at](Scene::SceneChoice const &st) {
     std::function< void() > modres = [&st, this]() {
       st.res();
-      this->location = &scenes.at(st.next_scene);
+      this->location = st.next_scene;
 			Mode::current = shared_from_this();
     };
 		items.emplace_back(st.st, nullptr, 1.0f, modres, at);
@@ -200,12 +200,12 @@ void StoryMode::enter_scene() {
 		at.y -= 4.0f;
 	};
 
-  for (Scene::SceneText const &st : location->texts) {
+  for (Scene::SceneText const &st : scenes.at(location).texts) {
     if (!st.pred()) continue;
     add_text(st);
   }
   at.y -= 4.0f;
-  for (Scene::SceneChoice const &st : location->choices) {
+  for (Scene::SceneChoice const &st : scenes.at(location).choices) {
     if (!st.pred()) continue;
     add_choice(st);
   }
@@ -233,7 +233,7 @@ void StoryMode::draw(glm::uvec2 const &drawable_size) {
 	{ //use a DrawSprites to do the drawing:
 		DrawSprites draw(*sprites, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
 		glm::vec2 ul = glm::vec2(view_min.x, view_max.y);
-    for (Scene::SceneSprite const &sp : location->sprites) {
+    for (Scene::SceneSprite const &sp : scenes.at(location).sprites) {
       if (sp.pred()) {
         draw.draw(*(sp.sp), ul);
       }
