@@ -6,154 +6,185 @@
 #include "data_path.hpp"
 #include "gl_errors.hpp"
 #include "MenuMode.hpp"
+#include <iostream>
 
 std::unordered_map< std::string, StoryMode::Scene > scenes;
 std::unordered_map< std::string, uint32_t > resources;
-
+//std::vector< std::vector< std::pair< std::string, bool >>> preds;
+std::string init_location = "";
 Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
-
   SpriteAtlas const *ret = new SpriteAtlas(data_path("the-planet"));
   std::ifstream scene_data;
-  scene_data.open("resources/scene-data.txt");
+  scene_data.open("../resources/desert-planet.txt");
   std::string line;
-  if (scene_data.is_open()) {
+  assert(scene_data.is_open() && "Story file not found");
 
-    enum {
-      CONDITIONS,
-      SCENE_TITLE,
-      SCENE_SPRITES,
-      SCENE_TEXT,
-      SCENE_CHOICES
-    } fsm = CONDITIONS;
-    StoryMode::Scene *curr_scene;
+  enum {
+    CONDITIONS,
+    SCENE_TITLE,
+    SCENE_SPRITES,
+    SCENE_TEXT,
+    SCENE_CHOICES
+  } fsm = CONDITIONS;
+  StoryMode::Scene *curr_scene;
 
-    while (std::getline(scene_data, line)) {
-      switch (fsm) {
-        case CONDITIONS: {
-          if (line.empty()) {
-            fsm = SCENE_TITLE;
-            break;
-          }
-          resources.emplace(line, 0);
+  while (std::getline(scene_data, line)) {
+
+/*    auto parse_pred = [&resources](std::string &csl) {
+      std::istringstream iss(csl);
+      std::string tmp;
+      std::vector<std::string> tokens;
+      while(std::getline(csl, tmp, ',') {
+        tokens.emplace_back(tmp);
+      }
+      for (std::string &tok : tokens) {
+        if (tok[0] == '!') {
+          negate = true;
+          tok.erase(0, 1);
+        }
+        else {
+          negate = false;
+        }
+        uint32_t &res_count_ref = resources.at(tok);
+        auto &res_count_ref = resources.at(tok);
+        if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
+        else pred = [&res_count_ref]() { return res_count_ref == 0; };
+      }
+
+    };*/
+
+    std::cout << line << std::endl;
+    switch (fsm) {
+      case CONDITIONS: {
+        if (line.empty()) {
+          fsm = SCENE_TITLE;
           break;
         }
-        case SCENE_TITLE: {
-          auto current_scene_pair = scenes.emplace(line, StoryMode::Scene());
-          assert(current_scene_pair.second && "Duplicate scene titles");
-          curr_scene = &current_scene_pair.first->second;
-          fsm = SCENE_SPRITES;
+        resources.emplace(line, 0);
+        break;
+      }
+      case SCENE_TITLE: {
+        auto current_scene_pair = scenes.emplace(
+          std::piecewise_construct,
+          std::forward_as_tuple(line),
+          std::forward_as_tuple()
+        );
+        if (init_location.empty()) init_location = line;
+        assert(current_scene_pair.second && "Duplicate scene titles");
+        curr_scene = &current_scene_pair.first->second;
+        fsm = SCENE_SPRITES;
+        break;
+      }
+      case SCENE_SPRITES: {
+        if (line.empty()) {
+          fsm = SCENE_TEXT;
           break;
         }
-        case SCENE_SPRITES: {
-          if (line.empty()) {
-            fsm = SCENE_TEXT;
-            break;
-          }
-          std::istringstream iss(line);
-          std::string tok;
-          bool negate;
-          std::function< bool() > pred;
-          std::getline(iss, tok, '|');
-          if (tok.empty()) {
-            pred = [](){ return true; };
+        std::istringstream iss(line);
+        std::string tok;
+        bool negate;
+        std::function< bool() > pred;
+        std::getline(iss, tok, '|');
+        if (tok.empty()) {
+          pred = [](){ return true; };
+        }
+        else {
+          if (tok[0] == '!') {
+            negate = true;
+            tok.erase(0, 1);
           }
           else {
-            if (tok[0] == '!') {
-              negate = true;
-              tok.erase(0, 1);
-            }
-            else {
-              negate = false;
-            }
-            auto &res_count_ref = resources.at(tok);
-            pred = [&res_count_ref]() { return res_count_ref; };
+            negate = false;
           }
-          std::getline(iss, tok);
-          curr_scene->sprites.emplace_back(&ret->lookup(tok), pred);
+          auto &res_count_ref = resources.at(tok);
+          if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
+          else pred = [&res_count_ref]() { return res_count_ref == 0; };
+        }
+        std::getline(iss, tok);
+        curr_scene->sprites.emplace_back(&ret->lookup(tok), pred);
+        break;
+      }
+      case SCENE_TEXT: {
+        if (line.empty()) {
+          fsm = SCENE_CHOICES;
           break;
         }
-        case SCENE_TEXT: {
-          if (line.empty()) {
-            fsm = SCENE_CHOICES;
-            break;
-          }
-          std::istringstream iss(line);
-          std::string tok;
-          bool negate;
-          std::function< bool() > pred;
-          std::getline(iss, tok, '|');
-          if (tok.empty()) {
-            pred = [](){ return true; };
+        std::istringstream iss(line);
+        std::string tok;
+        bool negate;
+        std::function< bool() > pred;
+        std::getline(iss, tok, '|');
+        if (tok.empty()) {
+          pred = [](){ return true; };
+        }
+        else {
+          if (tok[0] == '!') {
+            negate = true;
+            tok.erase(0, 1);
           }
           else {
-            if (tok[0] == '!') {
-              negate = true;
-              tok.erase(0, 1);
-            }
-            else {
-              negate = false;
-            }
-            auto &res_count_ref = resources.at(tok);
-            if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
-            else pred = [&res_count_ref]() { return res_count_ref == 0; };
+            negate = false;
           }
-          std::getline(iss, tok);
-          curr_scene->texts.emplace_back(tok, pred);
+          auto &res_count_ref = resources.at(tok);
+          if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
+          else pred = [&res_count_ref]() { return res_count_ref == 0; };
+        }
+        std::getline(iss, tok);
+        curr_scene->texts.emplace_back(tok, pred);
+        break;
+      }
+
+      case SCENE_CHOICES: {
+        if (line.empty()) {
+          fsm = SCENE_TITLE;
           break;
         }
-
-        case SCENE_CHOICES: {
-          if (line.empty()) {
-            fsm = SCENE_TITLE;
-            break;
-          }
-          std::istringstream iss(line);
-          std::string tok, tok1;
-          bool negate;
-          std::function< bool() > pred;
-          std::function< void() > res;
-          std::getline(iss, tok, '|');
-          if (tok.empty()) {
-            pred = [](){ return true; };
-          }
-          else {
-            if (tok[0] == '!') {
-              negate = true;
-              tok.erase(0, 1);
-            }
-            else {
-              negate = false;
-            }
-            auto &res_count_ref = resources.at(tok);
-            if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
-            else pred = [&res_count_ref]() { return res_count_ref == 0; };
-          }
-
-          std::getline(iss, tok, '|'); // This is the condition fulfilled
-          if (tok.empty()) {
-            res = [](){};
+        std::istringstream iss(line);
+        std::string tok, tok1;
+        bool negate;
+        std::function< bool() > pred;
+        std::function< void() > res;
+        std::getline(iss, tok, '|');
+        if (tok.empty()) {
+          pred = [](){ return true; };
+        }
+        else {
+          if (tok[0] == '!') {
+            negate = true;
+            tok.erase(0, 1);
           }
           else {
-            if (tok[0] == '!') {
-              negate = true;
-              tok.erase(0, 1);
-            }
-            else {
-              negate = false;
-            }
-            auto &res_count_ref = resources.at(tok);
-            if (!negate) res = [&res_count_ref]() { return res_count_ref++; };
-            else res = [&res_count_ref]() { return res_count_ref--; };
+            negate = false;
           }
-          std::getline(iss, tok, '|');
-          std::getline(iss, tok1);
-          curr_scene->choices.emplace_back(tok1, tok, pred, res);
-          break;
+          auto &res_count_ref = resources.at(tok);
+          if (!negate) pred = [&res_count_ref]() { return res_count_ref > 0; };
+          else pred = [&res_count_ref]() { return res_count_ref == 0; };
         }
 
+        std::getline(iss, tok, '|'); // This is the condition fulfilled
+        if (tok.empty()) {
+          res = [](){};
+        }
+        else {
+          if (tok[0] == '!') {
+            negate = true;
+            tok.erase(0, 1);
+          }
+          else {
+            negate = false;
+          }
+          auto &res_count_ref = resources.at(tok);
+          if (!negate) res = [&res_count_ref]() { return res_count_ref++; };
+          else res = [&res_count_ref]() { return res_count_ref--; };
+        }
+        std::getline(iss, tok, '|');
+        std::getline(iss, tok1);
+        curr_scene->choices.emplace_back(tok1, tok, pred, res);
+        break;
       }
 
     }
+
   }
 
 	return ret;
@@ -161,7 +192,7 @@ Load< SpriteAtlas > sprites(LoadTagDefault, []() -> SpriteAtlas const * {
 });
 
 StoryMode::StoryMode() {
-  location = &scenes.at("Dunes");
+  location = &scenes.at(init_location);
 }
 
 StoryMode::~StoryMode() {
@@ -217,7 +248,7 @@ void StoryMode::enter_scene() {
   }
 
 	std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >(items);
-	menu->atlas = sprites;
+	//menu->atlas = sprites;
 	menu->left_select = &sprites->lookup("text-select-left");
 	menu->right_select = &sprites->lookup("text-select-right");
 	menu->view_min = view_min;

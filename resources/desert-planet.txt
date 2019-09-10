@@ -14,7 +14,7 @@ Dunes
 !DunesVisit|As the sand settles, I see there is
 !DunesVisit|nobody here to meet me.
 DunesVisit|There is still nobody here to meet me.
- 
+| 
 WontLeave|Something remains to accomplish. I won't leave.
 
 |WontLeave|Dunes|Leave
@@ -30,7 +30,7 @@ Oasis
 !OasisVisit|circles. Just over the next dune, I find
 !OasisVisit|an oasis.
 OasisVisit|The oasis sparkles in the sunlight.
- 
+| 
 !TookStone|Glinting in the glass-clear water is a
 !TookStone|single blue gemstone.
 TookStone|The stone fits snugly in my pocket.
@@ -47,11 +47,10 @@ AddedStone|hill-missing
 !HillVisit|At the top of the third dune, a circle
 !HillVisit|of stones surrounds a shallow depression
 !HillVisit|in the ground.
- 
+| 
 !AddedStone|The circle of stones stands expectantly.
 AddedStone|I add the blue stone to the circle.
 AddedStone|Something trembles deep underground.
 
 !AddedStone|AddedStone|Hill|Add Blue Stone
-
 |HillVisit|Dunes|Return to the Ship
