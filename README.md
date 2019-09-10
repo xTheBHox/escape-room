@@ -1,8 +1,11 @@
-# (TODO: your game's title)
+# Virtual Real-Life Escape Game Room
 
-Author: (TODO: your name)
+Author: Benjamin Huang
 
-Design: (TODO: In two sentences or fewer, describe what is new and interesting about your game.)
+Design: The game brings the real-life escape game room back to the computer, in all its real-life glory. Not really glory.
+A story parser parses the escape-room.story file at runtime. You can modify escape-room.story to change the game.
+Check the readme in the resources directory and see desert-planet.story for another example (with basically the story for the original planet game).
+
 
 Screen Shot:
 
@@ -10,10 +13,10 @@ Screen Shot:
 
 How To Play:
 
-(TODO: describe the controls and (if needed) goals/strategy.)
+Use the arrow keys to select an option. Press Enter to submit.
 
 Art Sources:
 
-(TODO: fill in information about the sources of any artwork you used in the game that you did not draw.)
+All art was self drawn. Inspiration for the sitck figure from xkcd.com.
 
 This game was built with [NEST](NEST.md).
